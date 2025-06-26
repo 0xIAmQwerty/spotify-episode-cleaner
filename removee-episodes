@@ -1,0 +1,57 @@
+let delay = (ms) => new Promise(res => setTimeout(res, ms)); // Delay helper
+
+// Removes your saved Spotify episodes one at a time—hands-free. Open up the console and paste this into it and boom! - Qwerty
+
+// Waits for the "Remove from Your Episodes" option to appear
+async function waitForRemoveButton(timeout = 1500) {
+  const start = performance.now();
+  while (performance.now() - start < timeout) {
+    const items = [...document.querySelectorAll('[role="menuitem"]')];
+    const match = items.find(i => i.textContent.includes('Remove from Your Episodes'));
+    if (match) return match;
+    await delay(50); // Checks frequenty
+  }
+  return null;
+}
+
+// Main logic to loop through and remove episodes one by one
+async function removeEpisodesLoop(max = 300) {
+  let removed = 0;
+
+  while (removed < max) {
+    const btn = document.querySelector('button[aria-label^="More options for"]');
+    if (!btn) {
+      console.log("Done. No more episodes found. Scroll down and run again if needed.");
+      break;
+    }
+
+    btn.scrollIntoView({ behavior: 'instant', block: 'center' });
+    await delay(100);
+
+    console.log(`[${removed + 1}] Opening episode menu...`);
+    btn.click();
+    await delay(300);
+
+    const removeBtn = await waitForRemoveButton(1000);
+
+    if (removeBtn) {
+      console.log(`[${removed + 1}] Removing episode...`);
+      removeBtn.click();
+      removed++;
+      await delay(300);
+    } else {
+      console.warn(`[${removed + 1}] Could not find episode to remove, or maybe it's just not finding the button.`);
+      document.body.click(); // Try to close stuck menu
+      await delay(250);
+    }
+
+    window.scrollBy(0, 80);
+    await delay(400);
+  }
+
+  console.log(`Script complete. Removed ${removed} episode(s).`);
+  console.log(`- Script written & executed by Qwerty`);
+}
+
+// I had issues making this happen in bulk, so this just does one at a time- and this last command makes it loop.
+removeEpisodesLoop();
